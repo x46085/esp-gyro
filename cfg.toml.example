@@ -1,0 +1,3 @@
+[esp-gyro]
+wifi_ssid = "ExampleSSID"
+wifi_psk = "examplepassword"
