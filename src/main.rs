@@ -15,6 +15,8 @@ use icm42670::{Address, Icm42670, PowerMode as imuPowerMode};
 use shared_bus::BusManagerSimple;
 use shtcx::{self, PowerMode as shtPowerMode};
 
+use std::net::UdpSocket;
+
 /// This configuration is picked up at compile time by `build.rs` from the
 /// file `cfg.toml`.
 #[toml_cfg::toml_config]
@@ -23,6 +25,8 @@ pub struct Config {
     wifi_ssid: &'static str,
     #[default("")]
     wifi_psk: &'static str,
+    #[default("34343")]
+    udp_port: &'static str,
 }
 
 fn main() -> Result<()> {
@@ -86,25 +90,42 @@ fn main() -> Result<()> {
     // 9. Start the ICM42670p in low noise mode.
     imu.set_power_mode(imuPowerMode::GyroLowNoise).unwrap();
 
+    let addr = "127.0.0.1:".to_owned() + app_config.udp_port;
+    let socket = UdpSocket::bind(addr.to_owned())?;
+
+    println!("Sampling, example:");
+
+    let gyro_data = imu.gyro_norm().unwrap();
+    sht.start_measurement(shtPowerMode::NormalMode).unwrap();
+    FreeRtos.delay_ms(100u32);
+    let measurement = sht.get_measurement_result().unwrap();
+
+    println!(
+        "TEMP: {:.2} °C | HUM: {:.2} % | GYRO: X= {:.2}  Y= {:.2}  Z= {:.2}",
+        measurement.temperature.as_degrees_celsius(),
+        measurement.humidity.as_percent(),
+        gyro_data.x,
+        gyro_data.y,
+        gyro_data.z,
+    );
+
+    let mut message_count = 0u32;
+
     loop {
-        // 10. Read gyro data
-        let gyro_data = imu.gyro_norm().unwrap();
-        sht.start_measurement(shtPowerMode::NormalMode).unwrap();
-        FreeRtos.delay_ms(100u32);
-        let measurement = sht.get_measurement_result().unwrap();
-
-        // 11. Print all values
-        println!(
-            "TEMP: {:.2} °C | HUM: {:.2} % | GYRO: X= {:.2}  Y= {:.2}  Z= {:.2}",
-            measurement.temperature.as_degrees_celsius(),
-            measurement.humidity.as_percent(),
-            gyro_data.x,
-            gyro_data.y,
-            gyro_data.z,
-        );
         led.set_pixel(RGB8::new(0, 50, 0))?;
+        
+        let gyro_data = imu.gyro_norm().unwrap();
 
-        FreeRtos.delay_ms(500u32);
+        let buf = [
+            message_count.to_ne_bytes(),
+            gyro_data.x.to_ne_bytes(), 
+            gyro_data.x.to_ne_bytes(), 
+            gyro_data.x.to_ne_bytes()]
+            .concat();
+
+        socket.send_to(&buf, addr.to_owned())?;
+
+        message_count += 1;
 
         led.set_pixel(RGB8::new(0, 0, 50))?;
 

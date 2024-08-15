@@ -1,3 +1,4 @@
 [esp-gyro]
 wifi_ssid = "ExampleSSID"
 wifi_psk = "examplepassword"
+udp_port = "34343"
