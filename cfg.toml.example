@@ -1,4 +1,5 @@
 [esp-gyro]
 wifi_ssid = "ExampleSSID"
 wifi_psk = "examplepassword"
-udp_port = "34343"
+local_addr = "0.0.0.0:34343"
+broadcast_addr = "192.168.10.255:43434"

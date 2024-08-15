@@ -21,10 +21,16 @@ cargo binstall cargo-espflash
 cargo run
 ```
 
-4. Check for terminal output (profit):
+4. Check for terminal output:
 ```bash
 Device ID SHTC3: 0x47
 Device ID ICM42670p: 0x67
 Sampling, example:
 TEMP: 26.83 °C | HUM: 40.21 % | GYRO: X= -0.24  Y= 0.30  Z= -0.06
+```
+
+5. Confirm ability to receive the broadcast:
+```bash
+cd src && rustc udp-radio;
+./udp-radio
 ```

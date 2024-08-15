@@ -25,8 +25,10 @@ pub struct Config {
     wifi_ssid: &'static str,
     #[default("")]
     wifi_psk: &'static str,
-    #[default("34343")]
-    udp_port: &'static str,
+    #[default("0.0.0.0:34343")]
+    local_addr: &'static str,
+    #[default("192.168.10.255:43434")]
+    broadcast_addr: &'static str, 
 }
 
 fn main() -> Result<()> {
@@ -90,8 +92,7 @@ fn main() -> Result<()> {
     // 9. Start the ICM42670p in low noise mode.
     imu.set_power_mode(imuPowerMode::GyroLowNoise).unwrap();
 
-    let addr = "127.0.0.1:".to_owned() + app_config.udp_port;
-    let socket = UdpSocket::bind(addr.to_owned())?;
+
 
     println!("Sampling, example:");
 
@@ -109,12 +110,24 @@ fn main() -> Result<()> {
         gyro_data.z,
     );
 
+    let socket = UdpSocket::bind(app_config.local_addr)?;
+    socket.set_broadcast(true).expect("set_broadcast call failed");
     let mut message_count = 0u32;
 
     loop {
+        FreeRtos.delay_ms(100u32);
+
         led.set_pixel(RGB8::new(0, 50, 0))?;
-        
+
         let gyro_data = imu.gyro_norm().unwrap();
+        FreeRtos.delay_ms(100u32);
+
+        println!(
+            "GYRO: X= {:.2}  Y= {:.2}  Z= {:.2}",
+            gyro_data.x,
+            gyro_data.y,
+            gyro_data.z,
+        );
 
         let buf = [
             message_count.to_ne_bytes(),
@@ -123,7 +136,7 @@ fn main() -> Result<()> {
             gyro_data.x.to_ne_bytes()]
             .concat();
 
-        socket.send_to(&buf, addr.to_owned())?;
+        socket.send_to(&buf, app_config.broadcast_addr)?;
 
         message_count += 1;
 
