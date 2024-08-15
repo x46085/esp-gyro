@@ -34,3 +34,5 @@ TEMP: 26.83 °C | HUM: 40.21 % | GYRO: X= -0.24  Y= 0.30  Z= -0.06
 cd src && rustc udp-radio;
 ./udp-radio
 ```
+
+*NOTE* - It's important to pay attention to the broadcast ip in the configuration. Make sure that the subnet matches the actual subnet reported by the ESP Wifi connection. When using the radio, make sure that you are using the same broadcast port for the bind address.
